@@ -22,9 +22,15 @@ namespace Infrastructure.Data
 
         #region Compiled Queries
 
+        /// <summary>
+        /// Gönderilen id'ye ait ülke bilgisini çekmek için kullanılır.
+        /// </summary>
         public async Task<CountryDto?> GetCountryByIdAsync(int id, Language language)
             => await CompiledQueries.GetCountryByIdQuery(this, id, language);
 
+        /// <summary>
+        /// Bütün ülke bilgilerini çekmek için kullanılır.
+        /// </summary>
         public async Task<List<CountryDto>> GetAllCountriesAsync(Language language)
         {
             var countries = new List<CountryDto>();

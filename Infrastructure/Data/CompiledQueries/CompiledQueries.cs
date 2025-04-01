@@ -6,6 +6,9 @@ namespace Infrastructure.Data
 {
     public static class CompiledQueries
     {
+        /// <summary>
+        /// Gönderilen id'ye ait ülke bilgisini çekmek için kullanılır.
+        /// </summary>
         public static readonly Func<AppDbContext, int, Language, Task<CountryDto?>> GetCountryByIdQuery =
             EF.CompileAsyncQuery((AppDbContext _context, int id, Language language) =>
                 _context.Countries
@@ -44,6 +47,10 @@ namespace Infrastructure.Data
                     })
                     .FirstOrDefault());
 
+
+        /// <summary>
+        /// Bütün ülke bilgilerini çekmek için kullanılır.
+        /// </summary>
         public static readonly Func<AppDbContext, Language, IAsyncEnumerable<CountryDto>> GetAllCountriesQuery =
             EF.CompileAsyncQuery((AppDbContext _context, Language language) =>
                 _context.Countries

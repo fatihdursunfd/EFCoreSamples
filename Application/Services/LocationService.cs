@@ -25,6 +25,9 @@ namespace Application.Services
             _context = context;
         }
 
+        /// <summary>
+        /// Gönderilen id'ye ait ülke bilgisini çekmek için kullanılır.
+        /// </summary>
         public async Task<IDataResponse<CountryDto>> GetCountryByIdAsync(GetCountryByIdQuery query, CancellationToken cancellationToken)
         {
             var _query = _context.Countries
@@ -72,6 +75,10 @@ namespace Application.Services
             return new SuccessDataResponse<CountryDto>(entity);
         }
 
+
+        /// <summary>
+        /// Compiled Query Version - Gönderilen id'ye ait ülke bilgisini çekmek için kullanılır.
+        /// </summary>
         public async Task<IDataResponse<CountryDto>> GetCountryByIdWithCompileQueryAsync(GetCountryByIdWithCompiledQuery query, CancellationToken cancellationToken)
         {
             var entity = await _context.GetCountryByIdAsync(query.Id, query.Language);
@@ -84,6 +91,9 @@ namespace Application.Services
             return new SuccessDataResponse<CountryDto>(entity);
         }
 
+        /// <summary>
+        /// Bütün ülke bilgilerini çekmek için kullanılır.
+        /// </summary>
         public async Task<IDataResponse<List<CountryDto>>> GetAllCountriesAsync(GetAllCountriesQuery request, CancellationToken cancellationToken)
         {
             var _query = _context.Countries
@@ -104,6 +114,9 @@ namespace Application.Services
             return new SuccessDataResponse<List<CountryDto>>(entities);
         }
 
+        /// <summary>
+        /// Compiled Query Version - Bütün ülke bilgilerini çekmek için kullanılır.
+        /// </summary>
         public async Task<IDataResponse<List<CountryDto>>> GetAllCountriesWithCompiledQueryAsync(GetAllCountriesWithCompiledQuery request, CancellationToken cancellationToken)
         {
             var entities = await _context.GetAllCountriesAsync(request.Language);
