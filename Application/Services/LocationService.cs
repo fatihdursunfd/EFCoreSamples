@@ -7,6 +7,7 @@ using Application.CQRS.Location.Queries.GetAllCountries;
 using Application.CQRS.Location.Queries.GetCountries;
 using Application.CQRS.Location.Queries.GetCountryById;
 using Application.Interfaces;
+using Application.Interfaces.Data;
 using Domain.Dtos.Location;
 using Domain.Entities;
 using Domain.Enums;

@@ -1,5 +1,7 @@
-﻿using Microsoft.OpenApi.Models;
-using System.Reflection;
+﻿using Infrastructure.Data.Seed;
+using Infrastructure.Data;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace API.DependencyResolvers
 {
@@ -14,7 +16,7 @@ namespace API.DependencyResolvers
             services.SwaggerConfiguration(configuration);
         }
 
-        public static void Register(this IApplicationBuilder app, IHostEnvironment env)
+        public static async Task Register(this IApplicationBuilder app, IHostEnvironment env)
         {
             app.UseStaticFiles();
 
@@ -25,6 +27,8 @@ namespace API.DependencyResolvers
             app.UseAuthentication();
 
             app.UseAuthorization();
+
+            await app.Seed();
         }
 
 
@@ -49,6 +53,31 @@ namespace API.DependencyResolvers
                 //string xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 //opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 
+                opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Example \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                    BearerFormat = "JWT"
+                });
+
+                opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                   {
+                       new OpenApiSecurityScheme
+                       {
+                           Reference = new OpenApiReference
+                           {
+                               Type = ReferenceType.SecurityScheme,
+                               Id = "Bearer"
+                           }
+                       },
+                       new string[]{ }
+                   }
+                });
+
                 opt.UseInlineDefinitionsForEnums();
             });
 
@@ -62,6 +91,19 @@ namespace API.DependencyResolvers
                 {
                     opt.InjectStylesheet("/assets/css/swagger.css");
                 });
+            }
+        }
+
+        private static async Task Seed(this IApplicationBuilder app)
+        {
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var _context = services.GetService<AppDbContext>();
+
+                CancellationTokenSource cts = new();
+
+                await DataSeeder.Seed(_context, cts.Token);
             }
         }
     }

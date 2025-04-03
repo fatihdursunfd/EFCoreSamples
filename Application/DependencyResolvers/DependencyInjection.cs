@@ -14,6 +14,7 @@ namespace Application.DependencyResolvers
             });
 
             services.AddScoped<ILocationService, LocationService>();
+            services.AddScoped<ICompanyService, CompanyService>();
         }
     }
 }

@@ -1,22 +1,49 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Data;
 using Domain.Dtos.Location;
 using Domain.Entities;
+using Domain.Entities.Identity;
 using Domain.Enums;
+using Infrastructure.Data.Configuration;
+using Infrastructure.Data.QueryFilter;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.Reflection;
 
 namespace Infrastructure.Data
 {
-    public class AppDbContext(DbContextOptions options) : DbContext(options), IAppDbContext
+    public class AppDbContext : IdentityDbContext<ApplicationUser,
+                                                  ApplicationRole,
+                                                  Guid,
+                                                  ApplicationUserClaim,
+                                                  ApplicationUserRole,
+                                                  ApplicationUserLogin,
+                                                  ApplicationRoleClaim,
+                                                  ApplicationUserToken>, IAppDbContext
     {
 
+        private readonly ICurrentUser _currentUser;
+        public AppDbContext(DbContextOptions options, ICurrentUser currentUser) : base(options)
+        {
+            _currentUser = currentUser;
+        }
+
         #region DbSet
+
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+        public DbSet<ApplicationRole> ApplicationRoles { get; set; }
+        public DbSet<ApplicationUserRole> ApplicationUserRoles { get; set; }
+        public DbSet<ApplicationRoleClaim> ApplicationRoleClaims { get; set; }
+        public DbSet<ApplicationUserClaim> ApplicationUserClaims { get; set; }
+        public DbSet<ApplicationUserLogin> ApplicationUserLogins { get; set; }
+        public DbSet<ApplicationUserToken> ApplicationUserTokens { get; set; }
 
         public DbSet<Country> Countries { get; set; }
         public DbSet<State> States { get; set; }
         public DbSet<Provience> Provinces { get; set; }
         public DbSet<District> Districts { get; set; }
+
+        public DbSet<Company> Companies { get; set; }
 
         #endregion
 
@@ -43,8 +70,34 @@ namespace Infrastructure.Data
 
         #endregion
 
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) 
         {
+            DateTime now = DateTime.UtcNow;
+
+            foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Entity> entry in ChangeTracker.Entries<Entity>())
+            {
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        entry.Entity.CreatedBy = _currentUser.UserId;
+                        entry.Entity.CreatedDate = now;
+                        entry.Entity.IsDeleted = false;
+                        break;
+
+                    case EntityState.Modified:
+                        entry.Entity.ModifiedBy = _currentUser.UserId;
+                        entry.Entity.ModifiedDate = now;
+                        break;
+
+                    case EntityState.Deleted:
+                        entry.State = EntityState.Modified;
+                        entry.Entity.IsDeleted = true;
+                        entry.Entity.ModifiedBy = _currentUser.UserId;
+                        entry.Entity.ModifiedDate = now;
+                        break;
+                }
+            }
+
             return base.SaveChangesAsync(cancellationToken);
         }
 
@@ -54,6 +107,33 @@ namespace Infrastructure.Data
         /// </summary>
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            var entityTypes = builder.Model.GetEntityTypes();
+
+            foreach (var entityType in entityTypes)
+            {
+                MethodInfo? addQueryFilterMethod = typeof(AddQueryFilters)
+                    .GetMethod(nameof(AddQueryFilters.AddQueryFilterToBaseEntities));
+
+                if (addQueryFilterMethod is null)
+                {
+                    continue;
+                }
+
+                addQueryFilterMethod = addQueryFilterMethod.MakeGenericMethod([entityType.ClrType]);
+                addQueryFilterMethod.Invoke(null, [builder]);
+
+                MethodInfo? configurationMethod = typeof(ConfigureBaseEntities)
+                    .GetMethod(nameof(ConfigureBaseEntities.ConfigureEntities));
+
+                if (configurationMethod is null)
+                {
+                    continue;
+                }
+
+                configurationMethod = configurationMethod.MakeGenericMethod([entityType.ClrType]);
+                configurationMethod.Invoke(null, [builder]);
+            }
+
             // Mevcut assembly içerisinde bulunan configuration dosyalarında bulunan konfigurasyonlar uygulanır
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
@@ -79,6 +159,6 @@ namespace Infrastructure.Data
             base.ConfigureConventions(configurationBuilder);
         }
 
-        
+
     }
 }
